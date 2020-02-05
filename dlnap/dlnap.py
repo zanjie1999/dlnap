@@ -756,6 +756,9 @@ if __name__ == '__main__':
    proxy_port = 8000
    ssdp_version = 1
    for opt, arg in opts:
+      if opt in ('--urlNext'):
+         action = 'urlNext'
+         urlNext = arg
       if opt in ('-h', '--help'):
          usage()
          sys.exit(0)
@@ -808,8 +811,7 @@ if __name__ == '__main__':
          proxy = True
       elif opt in ('--proxy-port'):
          proxy_port = int(arg)
-      elif opt in ('--urlNext'):
-         urlNext = arg
+
 
    logging.basicConfig(level=logLevel)
 
@@ -878,8 +880,10 @@ if __name__ == '__main__':
       print(d.info())
    elif action == 'media-info':
       print(d.media_info())
-   elif urlNext:
+   elif action == 'urlNext':
       d.set_next_media(url=urlNext)
+      
+   print(action)
 
    if proxy:
       while running:
