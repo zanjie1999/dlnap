@@ -878,6 +878,8 @@ if __name__ == '__main__':
       print(d.info())
    elif action == 'media-info':
       print(d.media_info())
+   elif urlNext:
+      d.set_next_media(url=urlNext)
 
    if proxy:
       while running:
