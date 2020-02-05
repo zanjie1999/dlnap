@@ -23,7 +23,7 @@
 #
 #   1.0  moved from idea version
 
-__version__ = "0.15"
+__version__ = "0.16"
 
 import re
 import sys
@@ -510,6 +510,16 @@ class DlnapDevice:
       packet = self._create_packet('SetAVTransportURI', {'InstanceID':instance_id, 'CurrentURI':url, 'CurrentURIMetaData':'' })
       _send_tcp((self.ip, self.port), packet)
 
+   def set_next_media(self, url, instance_id=0):
+      """ Set next media to playback.
+
+      url -- next media url
+      instance_id -- device instance id
+      """
+      packet = self._create_packet('SetNextAVTransportURI', {'InstanceID': instance_id, 'NextURI': url, 'NextURIMetaData': ''})
+      _send_tcp((self.ip, self.port), packet)
+
+        
    def play(self, instance_id = 0):
       """ Play media that was already set as current.
 
@@ -678,6 +688,7 @@ if __name__ == '__main__':
       print(' --device <device name or part of the name> - discover devices with this name as substring')
       print(' --all - flag to discover all upnp devices, not only devices with AVTransport ability')
       print(' --play <url> - set current url for play and start playback it. In case of url is empty - continue playing recent media.')
+      print(' --urlNext <url> - set next url for play, only work without a proxy.')
       print(' --pause - pause current playback')
       print(' --stop - stop current playback')
       print(' --mute - mute playback')
@@ -711,6 +722,7 @@ if __name__ == '__main__':
                                                                'mute',
                                                                'unmute',
                                                                'seek=',
+                                                               'urlNext=',
 
 
                                                                # discover arguments
@@ -732,6 +744,7 @@ if __name__ == '__main__':
 
    device = ''
    url = ''
+   urlNext = ''
    vol = 10
    position = '00:00:00'
    timeout = 1
@@ -795,6 +808,8 @@ if __name__ == '__main__':
          proxy = True
       elif opt in ('--proxy-port'):
          proxy_port = int(arg)
+      elif opt in ('--urlNext'):
+         urlNext = arg
 
    logging.basicConfig(level=logLevel)
 
@@ -818,6 +833,11 @@ if __name__ == '__main__':
       process = subprocess.Popen(['youtube-dl', '-g', url], stdout = subprocess.PIPE)
       url, err = process.communicate()
 
+   if urlNext.lower().replace('https://', '').replace('www.', '').startswith('youtube.'):
+      import subprocess
+      process = subprocess.Popen(['youtube-dl', '-g', urlNext], stdout = subprocess.PIPE)
+      urlNext, err = process.communicate()
+
    if url.lower().startswith('https://'):
       proxy = True
 
@@ -827,12 +847,16 @@ if __name__ == '__main__':
       t.daemon = True
       t.start()
       time.sleep(2)
+      if urlNext:
+         urlNext = None
 
    if action == 'play':
       try:
          d.stop()
          url = 'http://{}:{}/{}'.format(ip, proxy_port, url) if proxy else url
          d.set_current_media(url=url)
+         if not proxy and urlNext:
+            d.set_next_media(url=urlNext)
          d.play()
       except Exception as e:
          print('Device is unable to play media.')
